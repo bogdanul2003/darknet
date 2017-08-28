@@ -1,8 +1,8 @@
-GPU=0
-CUDNN=0
-OPENCV=0
+GPU=1
+CUDNN=1
+OPENCV=1
 DEBUG=0
-OPENMP=0
+OPENMP=1
 LIBSO=0
 
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
@@ -90,7 +90,7 @@ $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)%.o: %.cu $(DEPS)
-	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+	$(NVCC) $(ARCH) $(COMMON) --default-stream per-thread --compiler-options "$(CFLAGS)" -c $< -o $@
 
 obj:
 	mkdir -p obj

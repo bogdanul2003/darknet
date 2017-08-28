@@ -614,7 +614,11 @@ image load_image_cv(char *filename, int channels)
 image get_image_from_stream(CvCapture *cap)
 {
     IplImage* src = cvQueryFrame(cap);
-    if (!src) return make_empty_image(0,0,0);
+    if (!src) 
+    {
+		printf("END OF FILE!!!!\n");
+		return make_empty_image(0,0,0);
+	}
     image im = ipl_to_image(src);
     rgbgr_image(im);
     return im;
