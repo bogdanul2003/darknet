@@ -75,7 +75,6 @@ IplImage* in_img;
 IplImage* in_img2;
 IplImage* det_img;
 IplImage* det_img2;
-IplImage* show_img;
 
 void *fetch_in_thread(void *ptr)
 {
@@ -111,25 +110,47 @@ void *detect_in_thread(void *ptr)
 
     layer l = net.layers[net.n-1];
     float *X = det_s.data;
+    //printf("loop1: !!!!!!!!!!!1\n");
     float *prediction = network_predict(net, X);
+    //printf("loop1: !!!!!!!!!!!2\n");
+
+    
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
+
+    
+
     mean_arrays(predictions, FRAMES, l.outputs, avg);
+
+    // int count=0;
+    // for(int i=0;i<l.outputs;i++)
+    // {
+    //     if(avg[i]>0.1)
+    //     count++;
+    // }
+    // printf("count>0 : %d\n", count);
+
     l.output = avg;
 
     free_image(det_s);
     if(l.type == DETECTION){
+        //printf("DETECTION");
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
+        //printf("REGION");
         get_region_boxes(l, 1, 1, demo_thresh, probs, boxes, 0, 0);
     } else {
         error("Last layer must produce detections\n");
     }
     if (nms > 0) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-    printf("\033[2J");
-    printf("\033[1;1H");
-    printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
+
+    // count=0;
+    // for(int i=0;i<l.w*l.h*l.n;i++)
+    // for(int j=0;j<l.classes;j++)
+    //     if(probs[i][j]>0)
+    //         count++;
+    // printf("%d %d outputs:%d\n",l.w*l.h*l.n, l.classes, count);
 
     images[demo_index] = det;
     det = images[(demo_index + FRAMES/2 + 1)%FRAMES];
@@ -149,25 +170,43 @@ void *detect_in_thread2(void *ptr)
 
     layer l = net2.layers[net2.n-1];
     float *X = det_s2.data;
+    //printf("loop2: !!!!!!!!!!!1\n");
     float *prediction = network_predict(net2, X);
+    //printf("loop2: !!!!!!!!!!!2\n");
+    
 
     memcpy(predictions2[demo_index2], prediction, l.outputs*sizeof(float));
+
     mean_arrays(predictions2, FRAMES, l.outputs, avg2);
+
+    // int count=0;
+    // for(int i=0;i<l.outputs;i++)
+    // {
+    //     if(avg2[i]>0.1)
+    //     count++;
+    // }
+    // printf("count>0 : %d\n", count);
+
     l.output = avg2;
 
     free_image(det_s2);
     if(l.type == DETECTION){
+       // printf("DETECTION\n");
         get_detection_boxes(l, 1, 1, demo_thresh2, probs2, boxes2, 0);
     } else if (l.type == REGION){
+       // printf("REGION\n");
         get_region_boxes(l, 1, 1, demo_thresh2, probs2, boxes2, 0, 0);
     } else {
         error("Last layer must produce detections\n");
     }
     if (nms > 0) do_nms(boxes2, probs2, l.w*l.h*l.n, l.classes, nms);
-    printf("\033[2J");
-    printf("\033[1;1H");
-    printf("\nFPS2:%.1f\n",fps2);
-    printf("Objects2:\n\n");
+
+    // count=0;
+    // for(int i=0;i<l.w*l.h*l.n;i++)
+    // for(int j=0;j<l.classes;j++)
+    //     if(probs2[i][j]>0.1)
+    //         count++;
+    // printf("%d %d outputs:%d\n",l.w*l.h*l.n, l.classes, count);
 
     images2[demo_index2] = det2;
     det2 = images2[(demo_index2 + FRAMES/2 + 1)%FRAMES];
@@ -176,7 +215,7 @@ void *detect_in_thread2(void *ptr)
     demo_index2 = (demo_index2 + 1)%FRAMES;
 	    
 	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
-	//draw_detections_cv(det_img2, l.w*l.h*l.n, demo_thresh2, boxes2, probs2, demo_names, demo_alphabet, demo_classes);
+	draw_detections_cv(det_img2, l.w*l.h*l.n, demo_thresh2, boxes2, probs2, demo_names, demo_alphabet, demo_classes);
 
 	return 0;
 }
@@ -190,6 +229,93 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
+void *loop1(void *ptr)
+{
+    float fps;
+    double before = get_wall_time();
+    int count =0;
+    IplImage* show_img;
+
+    while(1){
+        ++count;
+        
+            //printf("loop1: !!!!!!!!!!!1\n");
+            fetch_in_thread(0);
+           // printf("loop1: !!!!!!!!!!!2\n");
+			det_img = in_img;
+            det   = in;
+            det_s = in_s;
+            detect_in_thread(0);
+           // printf("loop1: !!!!!!!!!!!3\n");
+                free_image(disp);
+                disp = det;
+            
+
+            show_img = det_img;
+            
+            //show_image_cv_ipl(show_img, "Demo", NULL);
+            //show_image(disp2, "Demo");
+            //cvWaitKey(1);
+        
+
+
+            double after = get_wall_time();
+            float curr = 1./(after - before);
+            fps = curr;
+            before = after;
+        printf("FPS1:%.1f\n",fps);
+        printf("FRAME1: %d\n", count);
+        if(count>500)
+            break;
+    }
+
+    return 0;
+}
+
+void *loop2(void *ptr)
+{
+    float fps;
+    double before = get_wall_time();
+    int count =0;
+    IplImage* show_img;
+
+    while(1){
+        ++count;
+        
+           // printf("loop2: !!!!!!!!!!!1\n");
+            fetch_in_thread2(0);
+           // printf("loop2: !!!!!!!!!!!2\n");
+			det_img2 = in_img2;
+            det2   = in2;
+            det_s2 = in_s2;
+            detect_in_thread2(0);
+           // printf("loop2: !!!!!!!!!!!3\n");
+            
+            free_image(disp2);
+            disp2 = det2;
+            
+
+            show_img = det_img2;
+            
+            //show_image_cv_ipl(show_img, "Demo2", NULL);
+            //show_image(disp2, "Demo");
+            //cvWaitKey(1);
+        
+
+
+            double after = get_wall_time();
+            float curr = 1./(after - before);
+            fps = curr;
+            before = after;
+        printf("FPS2:%.1f\n",fps);
+        printf("FRAME2: %d\n", count);
+        if(count>500)
+            break;
+    }
+
+    return 0;
+}
+
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename)
 {
     //skip = frame_skip;
@@ -199,6 +325,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_alphabet = alphabet;
     demo_classes = classes;
     demo_thresh = thresh;
+    demo_thresh2 = thresh;
     printf("Demo\n");
     net = parse_network_cfg(cfgfile);
     net2 = parse_network_cfg(cfgfile);
@@ -211,7 +338,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     srand(2222222);
 
-    char *filename2="/home/cuda/Documents/vid2.mp4";
+    char *filename2="/home/cuda/Documents/vid3.mp4";
 
     if(filename){
         printf("video file: %s %s\n", filename,filename2);
@@ -243,13 +370,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     boxes2 = (box *)calloc(l2.w*l2.h*l2.n, sizeof(box));
     probs2 = (float **)calloc(l2.w*l2.h*l2.n, sizeof(float *));
-    for(j = 0; j < l.w*l.h*l.n; ++j) probs2[j] = (float *)calloc(l2.classes, sizeof(float *));
+    for(j = 0; j < l2.w*l2.h*l2.n; ++j) probs2[j] = (float *)calloc(l2.classes, sizeof(float *));
 
-    pthread_t fetch_thread;
-    pthread_t detect_thread;
-
-    pthread_t fetch_thread2;
-    pthread_t detect_thread2;
+    pthread_t loop1_thread;
+    pthread_t loop2_thread;
 
     fetch_in_thread(0);
 	det_img = in_img;
@@ -307,21 +431,30 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
         cvMoveWindow("Demo", 0, 0);
         cvResizeWindow("Demo", 1352, 1013);
+
+        cvNamedWindow("Demo2", CV_WINDOW_NORMAL); 
+        cvMoveWindow("Demo2", 0, 0);
+        cvResizeWindow("Demo2", 1352, 1013);
     }
 
-    double before = get_wall_time();
+    if(pthread_create(&loop1_thread, 0, loop1, 0)) error("Thread creation failed");
+    if(pthread_create(&loop2_thread, 0, loop2, 0)) error("Thread creation failed");
+    pthread_join(loop1_thread,0);
+    pthread_join(loop2_thread,0);
+
+    /*double before = get_wall_time();
 
     while(1){
         ++count;
-        if(1){
+        if(0){
             if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-            if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+            //if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
             if(pthread_create(&fetch_thread2, 0, fetch_in_thread2, 0)) error("Thread creation failed");
             if(pthread_create(&detect_thread2, 0, detect_in_thread2, 0)) error("Thread creation failed");
 
             if(!prefix){                
 				
-				//show_image_cv_ipl(show_img, "Demo", out_filename);
+				show_image_cv_ipl(det_img2, "Demo", out_filename);
                 int c = cvWaitKey(1);
                 if (c == 10){
                     if(frame_skip == 0) frame_skip = 60;
@@ -356,6 +489,19 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             det_s2 = in_s2;
         }else {
             fetch_in_thread(0);
+			det_img2 = in_img;
+            det2   = in;
+            det_s2 = in_s;
+            detect_in_thread2(0);
+            if(delay == 0) {
+                free_image(disp2);
+                disp2 = det2;
+            }
+            show_img = det_img2;
+
+            //show_image_cv_ipl(show_img, "Demo2", out_filename);
+
+            fetch_in_thread(0);
 			det_img = in_img;
             det   = in;
             det_s = in_s;
@@ -364,7 +510,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                 free_image(disp);
                 disp = det;
             }
-            show_image(disp, "Demo");
+
+            show_img = det_img;
+            
+            //show_image_cv_ipl(show_img, "Demo", out_filename);
+            //show_image(disp2, "Demo");
             cvWaitKey(1);
         }
         --delay;
@@ -376,7 +526,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             fps = curr;
             before = after;
         }
-    }
+        printf("FRAME: %d\n", count);
+        if(count>200)
+            break;
+    }*/
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename)
