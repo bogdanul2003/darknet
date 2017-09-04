@@ -236,6 +236,27 @@ void *loop1(void *ptr)
     int count =0;
     IplImage* show_img;
 
+    fetch_in_thread(0);
+	det_img = in_img;
+    det = in;
+    det_s = in_s;
+
+    fetch_in_thread(0);
+    detect_in_thread(0);
+    disp = det;
+	det_img = in_img;
+    det = in;
+    det_s = in_s;
+
+    for(int j = 0; j < FRAMES/2; ++j){
+        fetch_in_thread(0);
+        detect_in_thread(0);
+        disp = det;
+		det_img = in_img;
+        det = in;
+        det_s = in_s;
+    }
+
     while(1){
         ++count;
         
@@ -278,6 +299,27 @@ void *loop2(void *ptr)
     double before = get_wall_time();
     int count =0;
     IplImage* show_img;
+
+    fetch_in_thread2(0);
+	det_img2 = in_img2;
+    det2 = in2;
+    det_s2 = in_s2;
+
+    fetch_in_thread2(0);
+    detect_in_thread2(0);
+    disp2 = det2;
+	det_img2 = in_img2;
+    det2 = in2;
+    det_s2 = in_s2;
+
+    for(int j = 0; j < FRAMES/2; ++j){
+        fetch_in_thread2(0);
+        detect_in_thread2(0);
+        disp2 = det2;
+		det_img2 = in_img2;
+        det2 = in2;
+        det_s2 = in_s2;
+    }
 
     while(1){
         ++count;
@@ -336,6 +378,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     set_batch_network(&net, 1);
     set_batch_network(&net2, 1);
 
+    net.thread_id = 0;
+    net2.thread_id = 1;
+
     srand(2222222);
 
     char *filename2="/home/cuda/Documents/vid3.mp4";
@@ -374,56 +419,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     pthread_t loop1_thread;
     pthread_t loop2_thread;
-
-    fetch_in_thread(0);
-	det_img = in_img;
-    det = in;
-    det_s = in_s;
-
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1\n");
-
-    fetch_in_thread2(0);
-	det_img2 = in_img2;
-    det2 = in2;
-    det_s2 = in_s2;
-
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2\n");
-
-    fetch_in_thread(0);
-    detect_in_thread(0);
-    disp = det;
-	det_img = in_img;
-    det = in;
-    det_s = in_s;
-
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3\n");
-
-    fetch_in_thread2(0);
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!4\n");
-    detect_in_thread2(0);
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!5\n");
-    disp2 = det2;
-	det_img2 = in_img2;
-    det2 = in2;
-    det_s2 = in_s2;
-
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!6\n");
-
-    for(j = 0; j < FRAMES/2; ++j){
-        fetch_in_thread(0);
-        detect_in_thread(0);
-        disp = det;
-		det_img = in_img;
-        det = in;
-        det_s = in_s;
-
-        fetch_in_thread2(0);
-        detect_in_thread2(0);
-        disp2 = det2;
-		det_img2 = in_img2;
-        det2 = in2;
-        det_s2 = in_s2;
-    }
+    
 
     prefix=0;
     int count = 0;
@@ -441,95 +437,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     if(pthread_create(&loop2_thread, 0, loop2, 0)) error("Thread creation failed");
     pthread_join(loop1_thread,0);
     pthread_join(loop2_thread,0);
-
-    /*double before = get_wall_time();
-
-    while(1){
-        ++count;
-        if(0){
-            if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-            //if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
-            if(pthread_create(&fetch_thread2, 0, fetch_in_thread2, 0)) error("Thread creation failed");
-            if(pthread_create(&detect_thread2, 0, detect_in_thread2, 0)) error("Thread creation failed");
-
-            if(!prefix){                
-				
-				show_image_cv_ipl(det_img2, "Demo", out_filename);
-                int c = cvWaitKey(1);
-                if (c == 10){
-                    if(frame_skip == 0) frame_skip = 60;
-                    else if(frame_skip == 4) frame_skip = 0;
-                    else if(frame_skip == 60) frame_skip = 4;   
-                    else frame_skip = 0;
-                }
-            }else{
-                char buff[256];
-                sprintf(buff, "%s_%08d", prefix, count);
-                save_image(disp, buff);
-            }
-
-            pthread_join(fetch_thread, 0);
-            pthread_join(detect_thread, 0);
-            pthread_join(fetch_thread2, 0);
-            pthread_join(detect_thread2, 0);
-
-            if(delay == 0){
-                free_image(disp);
-                free_image(disp2);
-                disp  = det;
-                disp2  = det2;
-                show_img = det_img;
-                //show_img2 = det_img2;
-            }
-            det_img = in_img;
-            det_img2 = in_img2;
-            det   = in;
-            det2   = in2;
-            det_s = in_s;
-            det_s2 = in_s2;
-        }else {
-            fetch_in_thread(0);
-			det_img2 = in_img;
-            det2   = in;
-            det_s2 = in_s;
-            detect_in_thread2(0);
-            if(delay == 0) {
-                free_image(disp2);
-                disp2 = det2;
-            }
-            show_img = det_img2;
-
-            //show_image_cv_ipl(show_img, "Demo2", out_filename);
-
-            fetch_in_thread(0);
-			det_img = in_img;
-            det   = in;
-            det_s = in_s;
-            detect_in_thread(0);
-            if(delay == 0) {
-                free_image(disp);
-                disp = det;
-            }
-
-            show_img = det_img;
-            
-            //show_image_cv_ipl(show_img, "Demo", out_filename);
-            //show_image(disp2, "Demo");
-            cvWaitKey(1);
-        }
-        --delay;
-        if(delay < 0){
-            delay = frame_skip;
-
-            double after = get_wall_time();
-            float curr = 1./(after - before);
-            fps = curr;
-            before = after;
-        }
-        printf("FRAME: %d\n", count);
-        if(count>200)
-            break;
-    }*/
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, char *out_filename)

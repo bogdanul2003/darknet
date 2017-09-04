@@ -247,7 +247,7 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 				alphabet = 0;
 			}
 
-            //printf("%s: %.0f%%\n", names[class], prob * 100);
+            printf("%s: %.0f%%\n", names[class], prob * 100);
             //continue;
 			int offset = class * 123457 % classes;
 			float red = get_color(2, offset, classes);
