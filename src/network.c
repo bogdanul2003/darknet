@@ -312,6 +312,7 @@ void set_batch_network(network *net, int b)
     for(i = 0; i < net->n; ++i){
         net->layers[i].batch = b;
 #ifdef CUDNN
+        net->layers[i].thread_id = net->thread_id;
         if(net->layers[i].type == CONVOLUTIONAL){
             cudnn_convolutional_setup(net->layers + i);
         }

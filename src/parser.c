@@ -584,11 +584,17 @@ int is_network(section *s)
 
 network parse_network_cfg(char *filename)
 {
+    return parse_network_cfg_do(filename, 0);
+}
+
+network parse_network_cfg_do(char *filename, unsigned int thread_id)
+{
     list *sections = read_cfg(filename);
     node *n = sections->front;
     if(!n) error("Config file has no sections");
     network net = make_network(sections->size - 1);
     net.gpu_index = gpu_index;
+    net.thread_id = thread_id;
     size_params params;
 
     section *s = (section *)n->val;
@@ -615,6 +621,7 @@ network parse_network_cfg(char *filename)
         s = (section *)n->val;
         options = s->options;
         layer l = {0};
+        
         LAYER_TYPE lt = string_to_layer_type(s->type);
         if(lt == CONVOLUTIONAL){
             l = parse_convolutional(options, params);
@@ -669,6 +676,7 @@ network parse_network_cfg(char *filename)
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         option_unused(options);
+        l.thread_id = thread_id;
         net.layers[count] = l;
         if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         free_section(s);

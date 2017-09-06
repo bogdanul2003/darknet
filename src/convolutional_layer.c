@@ -105,7 +105,7 @@ size_t get_workspace_size(layer l){
     if(gpu_index >= 0){
         size_t most = 0;
         size_t s = 0;
-        cudnnGetConvolutionForwardWorkspaceSize(cudnn_handle(),
+        cudnnGetConvolutionForwardWorkspaceSize(cudnn_handle(l.thread_id),
                 l.srcTensorDesc,
                 l.weightDesc,
                 l.convDesc,
@@ -113,7 +113,7 @@ size_t get_workspace_size(layer l){
                 l.fw_algo,
                 &s);
         if (s > most) most = s;
-        cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnn_handle(),
+        cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnn_handle(l.thread_id),
                 l.srcTensorDesc,
                 l.ddstTensorDesc,
                 l.convDesc,
@@ -121,7 +121,7 @@ size_t get_workspace_size(layer l){
                 l.bf_algo,
                 &s);
         if (s > most) most = s;
-        cudnnGetConvolutionBackwardDataWorkspaceSize(cudnn_handle(),
+        cudnnGetConvolutionBackwardDataWorkspaceSize(cudnn_handle(l.thread_id),
                 l.weightDesc,
                 l.ddstTensorDesc,
                 l.convDesc,
@@ -151,7 +151,7 @@ void cudnn_convolutional_setup(layer *l)
 #else
 	cudnnSetConvolution2dDescriptor(l->convDesc, l->pad, l->pad, l->stride, l->stride, 1, 1, CUDNN_CROSS_CORRELATION);	// cudnn 5.1
 #endif
-	cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
+	cudnnGetConvolutionForwardAlgorithm(cudnn_handle(l->thread_id),
             l->srcTensorDesc,
             l->weightDesc,
             l->convDesc,
@@ -159,7 +159,7 @@ void cudnn_convolutional_setup(layer *l)
             CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
             0,
             &l->fw_algo);
-    cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(),
+    cudnnGetConvolutionBackwardDataAlgorithm(cudnn_handle(l->thread_id),
             l->weightDesc,
             l->ddstTensorDesc,
             l->convDesc,
@@ -167,7 +167,7 @@ void cudnn_convolutional_setup(layer *l)
             CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
             0,
             &l->bd_algo);
-    cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(),
+    cudnnGetConvolutionBackwardFilterAlgorithm(cudnn_handle(l->thread_id),
             l->srcTensorDesc,
             l->ddstTensorDesc,
             l->convDesc,

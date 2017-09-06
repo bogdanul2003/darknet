@@ -229,9 +229,11 @@ double get_wall_time()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
+#define NUMBEROFFRAMES_TO_PROCESS 200
+
 void *loop1(void *ptr)
 {
-    float fps;
+    float fps, avg_fps=0;
     double before = get_wall_time();
     int count =0;
     IplImage* show_img;
@@ -283,19 +285,22 @@ void *loop1(void *ptr)
             double after = get_wall_time();
             float curr = 1./(after - before);
             fps = curr;
+            avg_fps += fps/NUMBEROFFRAMES_TO_PROCESS;
             before = after;
         printf("FPS1:%.1f\n",fps);
         printf("FRAME1: %d\n", count);
-        if(count>500)
+        if(count>NUMBEROFFRAMES_TO_PROCESS)
             break;
     }
+
+    printf("AVG_FPS1: %.1f\n", avg_fps);
 
     return 0;
 }
 
 void *loop2(void *ptr)
 {
-    float fps;
+    float fps, avg_fps;
     double before = get_wall_time();
     int count =0;
     IplImage* show_img;
@@ -348,13 +353,15 @@ void *loop2(void *ptr)
             double after = get_wall_time();
             float curr = 1./(after - before);
             fps = curr;
+            avg_fps += fps/NUMBEROFFRAMES_TO_PROCESS;
             before = after;
         printf("FPS2:%.1f\n",fps);
         printf("FRAME2: %d\n", count);
-        if(count>500)
+        if(count>NUMBEROFFRAMES_TO_PROCESS)
             break;
     }
 
+    printf("AVG_FPS2: %.1f\n", avg_fps);
     return 0;
 }
 
@@ -369,17 +376,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_thresh = thresh;
     demo_thresh2 = thresh;
     printf("Demo\n");
-    net = parse_network_cfg(cfgfile);
-    net2 = parse_network_cfg(cfgfile);
+    net = parse_network_cfg_do(cfgfile, 1);
+    net2 = parse_network_cfg_do(cfgfile, 2);
     if(weightfile){
         load_weights(&net, weightfile);
         load_weights(&net2, weightfile);
     }
     set_batch_network(&net, 1);
     set_batch_network(&net2, 1);
-
-    net.thread_id = 0;
-    net2.thread_id = 1;
 
     srand(2222222);
 

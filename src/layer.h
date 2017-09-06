@@ -51,6 +51,7 @@ struct layer{
     void (*forward_gpu)   (struct layer, struct network_state);
     void (*backward_gpu)  (struct layer, struct network_state);
     void (*update_gpu)    (struct layer, int, float, float, float);
+    unsigned int thread_id;
     int batch_normalize;
     int shortcut;
     int batch;

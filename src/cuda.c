@@ -62,16 +62,28 @@ dim3 cuda_gridsize(size_t n){
 }
 
 #ifdef CUDNN
-cudnnHandle_t cudnn_handle()
+cudnnHandle_t cudnn_handle(unsigned int thread_id)
 {
-    static int init[16] = {0};
-    static cudnnHandle_t handle[16];
+    static int init[16][16] = {0};
+    static cudnnHandle_t handle[16][16];
+    static cudaStream_t streams[16][16];
     int i = cuda_get_device();
-    if(!init[i]) {
-        cudnnCreate(&handle[i]);
-        init[i] = 1;
+
+    //printf("!!!!!!!!!!!!!!!!!!!! Stream create and set for %d %d\n", i, thread_id);
+
+    if(thread_id>15)
+        thread_id = 0;
+    if(!init[i][thread_id]) {
+        
+        cudnnCreate(&(handle[i][thread_id]));
+        if(thread_id!=0)
+        {
+            cudaStreamCreate(&(streams[i][thread_id]));
+            cudnnSetStream(handle[i][thread_id], streams[i][thread_id]);
+        }
+        init[i][thread_id] = 1;
     }
-    return handle[i];
+    return handle[i][thread_id];
 }
 #endif
 
