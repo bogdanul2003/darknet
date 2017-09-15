@@ -458,7 +458,9 @@ void top_predictions(network net, int k, int *index)
 float *network_predict(network net, float *input)
 {
 #ifdef GPU
-    if(gpu_index >= 0)  return network_predict_gpu(net, input);
+    //if(gpu_index >= 0)  return network_predict_gpu(net, input);
+    
+    if(gpu_index >= 0)  return network_predict_gpu_one_malloc(net, input);
 #endif
 
     network_state state;

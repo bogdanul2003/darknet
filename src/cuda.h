@@ -22,6 +22,7 @@ extern int gpu_index;
 void check_error(cudaError_t status);
 cublasHandle_t blas_handle();
 float *cuda_make_array(float *x, size_t n);
+float *cuda_make_array_with_gpu_pointer(float *x_gpu, float *x, size_t n);
 int *cuda_make_int_array(size_t n);
 void cuda_push_array(float *x_gpu, float *x, size_t n);
 void cuda_pull_array(float *x_gpu, float *x, size_t n);

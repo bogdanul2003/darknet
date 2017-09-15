@@ -393,6 +393,7 @@ float *network_predict_gpu(network net, float *input)
 {
     cuda_set_device(net.gpu_index);
     int size = get_network_input_size(net) * net.batch;
+    //printf("size: %d\n", size);
     network_state state;
     state.index = 0;
     state.net = net;
@@ -403,6 +404,29 @@ float *network_predict_gpu(network net, float *input)
     forward_network_gpu(net, state);
     float *out = get_network_output_gpu(net);
     cuda_free(state.input);
+    return out;
+}
+
+float *network_predict_gpu_one_malloc(network net, float *input)
+{
+    static float *gpu_input_ptr[16]= {NULL};
+    cuda_set_device(net.gpu_index);
+    int size = get_network_input_size(net) * net.batch;
+    //printf("size: %d\n", size);
+    network_state state;
+    state.index = 0;
+    state.net = net;
+    if(!gpu_input_ptr[net.thread_id])
+        gpu_input_ptr[net.thread_id] = cuda_make_array(input, size);
+    else
+        cuda_make_array_with_gpu_pointer(gpu_input_ptr[net.thread_id], input, size);
+    state.input = gpu_input_ptr[net.thread_id];
+    state.truth = 0;
+    state.train = 0;
+    state.delta = 0;
+    forward_network_gpu(net, state);
+    float *out = get_network_output_gpu(net);
+    //cuda_free(state.input);
     return out;
 }
 

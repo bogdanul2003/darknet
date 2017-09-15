@@ -78,8 +78,11 @@ cudnnHandle_t cudnn_handle(unsigned int thread_id)
         cudnnCreate(&(handle[i][thread_id]));
         if(thread_id!=0)
         {
-            cudaStreamCreate(&(streams[i][thread_id]));
-            cudnnSetStream(handle[i][thread_id], streams[i][thread_id]);
+            printf("created %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", thread_id);
+            //cudaStreamCreate(&(streams[i][thread_id]));
+            //cudnnSetStream(handle[i][thread_id], streams[i][thread_id]);
+            cudnnSetStream(handle[i][thread_id], cudaStreamPerThread);
+            
         }
         init[i][thread_id] = 1;
     }
@@ -92,6 +95,7 @@ cublasHandle_t blas_handle()
     static int init[16] = {0};
     static cublasHandle_t handle[16];
     int i = cuda_get_device();
+    printf("##################################!!!!!!!!!!!!!!!!!!!!!!!!\n");
     if(!init[i]) {
         cublasCreate(&handle[i]);
         init[i] = 1;
@@ -106,10 +110,24 @@ float *cuda_make_array(float *x, size_t n)
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     check_error(status);
     if(x){
-        status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
+        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, cudaStreamPerThread);
         check_error(status);
+        cudaStreamSynchronize(cudaStreamPerThread);
     }
     if(!x_gpu) error("Cuda malloc failed\n");
+    return x_gpu;
+}
+
+float *cuda_make_array_with_gpu_pointer(float *x_gpu, float *x, size_t n)
+{
+    if(!x_gpu) error("Cuda malloc failed\n");
+    if(x){
+        size_t size = sizeof(float)*n;
+        //printf("cuda_make_array_with_gpu_pointer \n");
+        cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, cudaStreamPerThread);
+        check_error(status);
+        cudaStreamSynchronize(cudaStreamPerThread);
+    }
     return x_gpu;
 }
 
@@ -158,15 +176,17 @@ void cuda_free(float *x_gpu)
 void cuda_push_array(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
-    cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
+    cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, cudaStreamPerThread);
     check_error(status);
+    cudaStreamSynchronize(cudaStreamPerThread);
 }
 
 void cuda_pull_array(float *x_gpu, float *x, size_t n)
 {
     size_t size = sizeof(float)*n;
-    cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
+    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, cudaStreamPerThread);
     check_error(status);
+    cudaStreamSynchronize(cudaStreamPerThread);
 }
 
 #endif

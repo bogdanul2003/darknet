@@ -392,7 +392,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     if(filename){
         printf("video file: %s %s\n", filename,filename2);
         cap = cvCaptureFromFile(filename);
-        cap2 = cvCaptureFromFile(filename2);
+        cap2 = cvCaptureFromFile(filename);
     }else{
         cap = cvCaptureFromCAM(cam_index);
     }
