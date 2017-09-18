@@ -61,6 +61,7 @@ typedef struct network{
     tree *hierarchy;
 
     unsigned int thread_id;
+    void (*decode_function_for_thread)();
 
     #ifdef GPU
     float **input_gpu;

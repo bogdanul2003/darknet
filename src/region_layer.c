@@ -382,12 +382,6 @@ void get_region_boxes(layer l, int w, int h, float thresh, float **probs, box *b
 
 void forward_region_layer_gpu(const region_layer l, network_state state)
 {
-    /*
-       if(!state.train){
-       copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
-       return;
-       }
-     */
     flatten_ongpu(state.input, l.h*l.w, l.n*(l.coords + l.classes + 1), l.batch, 1, l.output_gpu);
     if(l.softmax_tree){
         int i;
@@ -401,21 +395,32 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
         softmax_gpu(l.output_gpu+5, l.classes, l.classes + 5, l.w*l.h*l.n*l.batch, 1, l.output_gpu + 5);
     }
 
-    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    static float *in_cpu[16] = {NULL};
+    float *in_cpu_thread = in_cpu[l.thread_id];
     float *truth_cpu = 0;
     if(state.truth){
         int num_truth = l.batch*l.truths;
         truth_cpu = calloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
-    cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
+    if(!in_cpu_thread)
+    {
+        cudaError_t status = cudaHostAlloc((void**)&in_cpu_thread, l.batch*l.inputs*sizeof(float), cudaHostAllocPortable);
+        if (status != cudaSuccess)
+        {
+          printf("Error allocating pinned host memory\n");
+          exit(1);
+        }
+        in_cpu[l.thread_id] = in_cpu_thread;
+    }
+    cuda_pull_array_decode(l.output_gpu, in_cpu_thread, l.batch*l.inputs, state.net.decode_function_for_thread);
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
-    cpu_state.input = in_cpu;
+    cpu_state.input = in_cpu_thread;
     forward_region_layer(l, cpu_state);
     //cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-    free(cpu_state.input);
+    //free(cpu_state.input);
     if(!state.train) return;
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
     if(cpu_state.truth) free(cpu_state.truth);

@@ -9,6 +9,21 @@ int gpu_index = 0;
 #include <stdlib.h>
 #include <time.h>
 
+#include<assert.h>
+//#include<conio.h>
+
+#define cudaCheckErrors(msg) \
+do { \
+    cudaError_t __err = cudaGetLastError(); \
+    if (__err != cudaSuccess) { \
+        fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+            msg, cudaGetErrorString(__err), \
+            __FILE__, __LINE__); \
+        fprintf(stderr, "*** FAILED - ABORTING\n"); \
+        exit(1); \
+    } \
+} while (0)
+
 void cuda_set_device(int n)
 {
     gpu_index = n;
@@ -112,7 +127,6 @@ float *cuda_make_array(float *x, size_t n)
     if(x){
         status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, cudaStreamPerThread);
         check_error(status);
-        cudaStreamSynchronize(cudaStreamPerThread);
     }
     if(!x_gpu) error("Cuda malloc failed\n");
     return x_gpu;
@@ -126,7 +140,6 @@ float *cuda_make_array_with_gpu_pointer(float *x_gpu, float *x, size_t n)
         //printf("cuda_make_array_with_gpu_pointer \n");
         cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, cudaStreamPerThread);
         check_error(status);
-        cudaStreamSynchronize(cudaStreamPerThread);
     }
     return x_gpu;
 }
@@ -178,7 +191,7 @@ void cuda_push_array(float *x_gpu, float *x, size_t n)
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, cudaStreamPerThread);
     check_error(status);
-    cudaStreamSynchronize(cudaStreamPerThread);
+    //cudaStreamSynchronize(cudaStreamPerThread);
 }
 
 void cuda_pull_array(float *x_gpu, float *x, size_t n)
@@ -186,7 +199,16 @@ void cuda_pull_array(float *x_gpu, float *x, size_t n)
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, cudaStreamPerThread);
     check_error(status);
-    cudaStreamSynchronize(cudaStreamPerThread);
+   cudaStreamSynchronize(cudaStreamPerThread);
 }
 
+void cuda_pull_array_decode(float *x_gpu, float *x, size_t n, void(*decode_fn)())
+{
+    size_t size = sizeof(float)*n;
+    cudaError_t status = cudaMemcpyAsync(x, x_gpu, size, cudaMemcpyDeviceToHost, cudaStreamPerThread);
+    check_error(status);
+    if(decode_fn)
+        decode_fn();
+   cudaStreamSynchronize(cudaStreamPerThread);
+}
 #endif

@@ -14,6 +14,7 @@ extern int gpu_index;
 #include "cuda_runtime.h"
 #include "curand.h"
 #include "cublas_v2.h"
+#include "cuda_runtime_api.h"
 
 #ifdef CUDNN
 #include "cudnn.h"
@@ -26,6 +27,7 @@ float *cuda_make_array_with_gpu_pointer(float *x_gpu, float *x, size_t n);
 int *cuda_make_int_array(size_t n);
 void cuda_push_array(float *x_gpu, float *x, size_t n);
 void cuda_pull_array(float *x_gpu, float *x, size_t n);
+void cuda_pull_array_decode(float *x_gpu, float *x, size_t n, void(*decode_fn)());
 void cuda_set_device(int n);
 void cuda_free(float *x_gpu);
 void cuda_random(float *x_gpu, size_t n);

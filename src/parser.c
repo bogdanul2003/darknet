@@ -584,10 +584,10 @@ int is_network(section *s)
 
 network parse_network_cfg(char *filename)
 {
-    return parse_network_cfg_do(filename, 0);
+    return parse_network_cfg_do(filename, 0, NULL);
 }
 
-network parse_network_cfg_do(char *filename, unsigned int thread_id)
+network parse_network_cfg_do(char *filename, unsigned int thread_id, void(*decode)())
 {
     list *sections = read_cfg(filename);
     node *n = sections->front;
@@ -595,6 +595,7 @@ network parse_network_cfg_do(char *filename, unsigned int thread_id)
     network net = make_network(sections->size - 1);
     net.gpu_index = gpu_index;
     net.thread_id = thread_id;
+    net.decode_function_for_thread = decode;
     size_params params;
 
     section *s = (section *)n->val;

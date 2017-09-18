@@ -158,7 +158,7 @@ void *detect_in_thread(void *ptr)
 	det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
 	    
-	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+	
 	draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 
 	return 0;
@@ -214,8 +214,8 @@ void *detect_in_thread2(void *ptr)
 	det_img2 = ipl_images2[(demo_index2 + FRAMES / 2 + 1) % FRAMES];
     demo_index2 = (demo_index2 + 1)%FRAMES;
 	    
-	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
-	draw_detections_cv(det_img2, l.w*l.h*l.n, demo_thresh2, boxes2, probs2, demo_names, demo_alphabet, demo_classes);
+	
+	//draw_detections_cv(det_img2, l.w*l.h*l.n, demo_thresh2, boxes2, probs2, demo_names, demo_alphabet, demo_classes);
 
 	return 0;
 }
@@ -238,7 +238,7 @@ void *loop1(void *ptr)
     int count =0;
     IplImage* show_img;
 
-    fetch_in_thread(0);
+    /*fetch_in_thread(0);
 	det_img = in_img;
     det = in;
     det_s = in_s;
@@ -257,14 +257,13 @@ void *loop1(void *ptr)
 		det_img = in_img;
         det = in;
         det_s = in_s;
-    }
+    }*/
+    in_s.data = NULL;
 
     while(1){
         ++count;
-        
-            //printf("loop1: !!!!!!!!!!!1\n");
-            fetch_in_thread(0);
-           // printf("loop1: !!!!!!!!!!!2\n");
+
+            //fetch_in_thread(0);
 			det_img = in_img;
             det   = in;
             det_s = in_s;
@@ -293,8 +292,7 @@ void *loop1(void *ptr)
             break;
     }
 
-    printf("AVG_FPS1: %.1f\n", avg_fps);
-
+    printf("AVG_FPS1: %f\n", avg_fps);
     return 0;
 }
 
@@ -305,7 +303,7 @@ void *loop2(void *ptr)
     int count =0;
     IplImage* show_img;
 
-    fetch_in_thread2(0);
+    /*fetch_in_thread2(0);
 	det_img2 = in_img2;
     det2 = in2;
     det_s2 = in_s2;
@@ -324,13 +322,13 @@ void *loop2(void *ptr)
 		det_img2 = in_img2;
         det2 = in2;
         det_s2 = in_s2;
-    }
+    }*/
 
     while(1){
         ++count;
         
            // printf("loop2: !!!!!!!!!!!1\n");
-            fetch_in_thread2(0);
+            //fetch_in_thread2(0);
            // printf("loop2: !!!!!!!!!!!2\n");
 			det_img2 = in_img2;
             det2   = in2;
@@ -376,8 +374,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_thresh = thresh;
     demo_thresh2 = thresh;
     printf("Demo\n");
-    net = parse_network_cfg_do(cfgfile, 1);
-    net2 = parse_network_cfg_do(cfgfile, 2);
+    net = parse_network_cfg_do(cfgfile, 1, &fetch_in_thread);
+    net2 = parse_network_cfg_do(cfgfile, 2, &fetch_in_thread2);
     if(weightfile){
         load_weights(&net, weightfile);
         load_weights(&net2, weightfile);
