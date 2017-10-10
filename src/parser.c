@@ -587,7 +587,7 @@ network parse_network_cfg(char *filename)
     return parse_network_cfg_do(filename, 0, NULL);
 }
 
-network parse_network_cfg_do(char *filename, unsigned int thread_id, void(*decode)())
+network parse_network_cfg_do(char *filename, unsigned int thread_id, void*(*decode)())
 {
     list *sections = read_cfg(filename);
     node *n = sections->front;

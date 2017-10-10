@@ -286,7 +286,9 @@ void do_nms(box *boxes, float **probs, int total, int classes, float thresh)
             continue;
         }
         for(j = i+1; j < total; ++j){
-            if (box_iou(boxes[i], boxes[j]) > thresh){
+            float iou = box_iou(boxes[i], boxes[j]);
+            //printf("iou:%f\n", iou);
+            if (iou > thresh){
                 for(k = 0; k < classes; ++k){
                     if (probs[i][k] < probs[j][k]) probs[i][k] = 0;
                     else probs[j][k] = 0;

@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "blas.h"
 #include "cuda.h"
+#include "threadargs.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -231,9 +232,18 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 }
 
 #ifdef OPENCV
-void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
+void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float thresh, box *boxes, float **probs,*/ char **names, image **alphabet, int classes)
 {
-	int i;
+    int i;
+    IplImage* show_img = args->frame;
+    layer l = args->net->layers[args->net->n-1];
+    int num = l.w*l.h*l.n;
+    float thresh = args->thresh;
+    box *boxes = args->boxes;
+    float **probs = args->probs;
+
+    list_t *cur_frame = list_new();
+    list_rpush(cur_frame, list_node_new(malloc(3*sizeof(list_t *))));
 
 	for (i = 0; i < num; ++i) {
 		int class = max_index(probs[i], classes);
@@ -247,7 +257,7 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 				alphabet = 0;
 			}
 
-            printf("%s: %.0f%%\n", names[class], prob * 100);
+            
             //continue;
 			int offset = class * 123457 % classes;
 			float red = get_color(2, offset, classes);
@@ -270,7 +280,9 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 			if (left < 0) left = 0;
 			if (right > show_img->width - 1) right = show_img->width - 1;
 			if (top < 0) top = 0;
-			if (bot > show_img->height - 1) bot = show_img->height - 1;
+            if (bot > show_img->height - 1) bot = show_img->height - 1;
+            
+            printf("%s: %.0f%% left:%d right:%d top:%d bot:%d\n", names[class], prob * 100, left,right,top,bot);
 
 			float const font_size = show_img->height / 1000.F;
 			CvPoint pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
@@ -299,7 +311,11 @@ void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, f
 			cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, font_size, font_size, 0, font_size * 3, 8);	
 			cvPutText(show_img, names[class], pt_text, &font, black_color);
 		}
-	}
+    }
+
+    //free prev positions frame
+    list_t *prev_frame = args->prev_frame;
+    args->prev_frame = cur_frame;
 }
 #endif
 
@@ -550,7 +566,7 @@ void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filenam
 		printf("\n cvWriteFrame \n");
 	}
 
-	cvReleaseImage(&disp);
+	//cvReleaseImage(&disp);
 }
 #endif
 

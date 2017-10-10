@@ -1,7 +1,7 @@
 GPU=1
 CUDNN=1
 OPENCV=1
-DEBUG=0
+DEBUG=1
 OPENMP=0
 LIBSO=0
 
@@ -28,9 +28,9 @@ CC=gcc
 CPP=g++
 NVCC=nvcc 
 OPTS=-Ofast
-LDFLAGS= -lm -pthread 
-COMMON= 
-CFLAGS=-Wall -Wfatal-errors
+LDFLAGS= -Llist -Wl,-Bstatic -llist -Wl,-Bdynamic -lm -pthread -lX11 
+COMMON= -Ilist
+CFLAGS= -Wall -Wfatal-errors
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
