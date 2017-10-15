@@ -313,7 +313,7 @@ void *loop2(void *ptr)
 
     //define 3 lanes
     //list_rpush(cur_frame, list_node_new(malloc(3*sizeof(list_t *))));
-    list_rpush(prev_frame, list_node_new(malloc(3*sizeof(list_t *))));
+    //list_rpush(prev_frame, list_node_new(malloc(3*sizeof(list_t *))));
 
     while(1){
         ++count;

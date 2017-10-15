@@ -19,4 +19,16 @@ typedef struct  {
     bool created;
 }thread_args;
 
+typedef struct {
+    int position_x, position_y;
+    float speed, acceleration;
+}road_car;
+
+#define NUMBER_OF_LANES 3
+
+typedef struct {
+    float m1,b1,m2,b2;
+    list_t *cars;
+}road_lane;
+
 #endif

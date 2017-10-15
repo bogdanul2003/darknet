@@ -231,6 +231,46 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
     }
 }
 
+void init_lane_equ(int lane_nr, road_lane *lane)
+{
+    lane->m1 =0;
+    lane->m2 =0;
+    lane->b1 =0;
+    lane->b2 =0;
+
+    if(lane_nr == 0)
+    {
+        lane->m1 =  -2.73333333;
+        lane->m2 = -13.7083333;
+        lane->b1 = 302.933333;
+        lane->b2 = 2794.375;
+    } else if(lane_nr == 1)
+    {
+        lane->m1 =  -13.7083333;
+        lane->m2 = 3.8735632;
+        lane->b1 = 2794.375;
+        lane->b2 = -1178.8046;
+    } else if(lane_nr == 2)
+    {
+        lane->m1 =  3.8735632;
+        lane->m2 = 1.6960784;
+        lane->b1 = -1178.8046;
+        lane->b2 = -683.911764;
+    }
+}
+
+int find_lane(road_lane *lanes, int x, int y)
+{
+    for(int i=0;i<NUMBER_OF_LANES;i++)
+    {
+        float x_left = ((float)y - lanes[i].b1) / lanes[i].m1; 
+        float x_right = ((float)y - lanes[i].b2)/lanes[i].m2;
+        if((x_left<=x)&&(x<=x_right))
+            return i;
+    }
+    return -1;
+}
+
 #ifdef OPENCV
 void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float thresh, box *boxes, float **probs,*/ char **names, image **alphabet, int classes)
 {
@@ -243,7 +283,17 @@ void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float t
     float **probs = args->probs;
 
     list_t *cur_frame = list_new();
-    list_rpush(cur_frame, list_node_new(malloc(3*sizeof(list_t *))));
+    cur_frame->free=free;
+    road_lane *lanes = calloc(NUMBER_OF_LANES,sizeof(road_lane));
+    for(int i=0;i<NUMBER_OF_LANES;i++)
+    {
+        //lanes[i].cars = NULL;
+        init_lane_equ(i, &lanes[i]);
+        lanes[i].cars = list_new();
+        lanes[i].cars->free=free;
+    }
+    
+    list_rpush(cur_frame, list_node_new(lanes));
 
 	for (i = 0; i < num; ++i) {
 		int class = max_index(probs[i], classes);
@@ -282,7 +332,11 @@ void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float t
 			if (top < 0) top = 0;
             if (bot > show_img->height - 1) bot = show_img->height - 1;
             
-            printf("%s: %.0f%% left:%d right:%d top:%d bot:%d\n", names[class], prob * 100, left,right,top,bot);
+            int x_car = left + (right-left)/2;
+            int y_car = top + (bot - top)/2;
+            int lane = find_lane(lanes, x_car, y_car);
+            printf("%s: %.0f%% lane:%d left:%d right:%d top:%d bot:%d x:%d y:%d\n", names[class], prob * 100, lane, left,right,top,bot,x_car,y_car);
+
 
 			float const font_size = show_img->height / 1000.F;
 			CvPoint pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
@@ -314,8 +368,21 @@ void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float t
     }
 
     //free prev positions frame
-    list_t *prev_frame = args->prev_frame;
-    args->prev_frame = cur_frame;
+    
+        list_t *prev_frame = args->prev_frame;
+        args->prev_frame = cur_frame;
+        list_node_t *node= list_rpop(prev_frame);
+        if(node)
+        {
+            road_lane *lanes2 =  node->val;
+            for(int i=0;i<NUMBER_OF_LANES;i++)
+            {
+                if(lanes2[i].cars)
+                   list_destroy(lanes2[i].cars);
+            }
+        }
+        list_destroy(prev_frame);
+    
 }
 #endif
 
