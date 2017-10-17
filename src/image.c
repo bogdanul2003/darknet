@@ -337,6 +337,13 @@ void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float t
             int lane = find_lane(lanes, x_car, y_car);
             printf("%s: %.0f%% lane:%d left:%d right:%d top:%d bot:%d x:%d y:%d\n", names[class], prob * 100, lane, left,right,top,bot,x_car,y_car);
 
+            if(lane>-1)
+            {
+                road_car *car = calloc(1, sizeof(road_car));
+                car->position_x = x_car;
+                car->position_y = y_car;
+                list_rpush(lanes[lane].cars, list_node_new(car));
+            }
 
 			float const font_size = show_img->height / 1000.F;
 			CvPoint pt1, pt2, pt_text, pt_text_bg1, pt_text_bg2;
@@ -377,8 +384,20 @@ void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float t
             road_lane *lanes2 =  node->val;
             for(int i=0;i<NUMBER_OF_LANES;i++)
             {
-                if(lanes2[i].cars)
-                   list_destroy(lanes2[i].cars);
+                if((lanes2[i].cars)&&(lanes2[i].cars->len > 0))
+                {
+                    printf("prev lane %d %d cars: ", i, lanes2[i].cars->len);
+                    int n = lanes2[i].cars->len;
+                    for(int j=0;j<n;j++)
+                    {
+
+                        list_node_t *node = list_lpop(lanes2[i].cars);
+                        road_car *car = (road_car *) node->val;
+                        printf("car%d: %d,%d | ", j, car->position_x, car->position_y);
+                    }
+                    list_destroy(lanes2[i].cars);
+                    printf("\n");
+                }
             }
         }
         list_destroy(prev_frame);
