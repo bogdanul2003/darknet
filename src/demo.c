@@ -308,7 +308,7 @@ void *loop2(void *ptr)
     IplImage* show_img;
     //list_t *cur_frame = list_new();
     list_t *prev_frame =  list_new();
-    thread_args args={&net2,NULL,"Demo2",0.3,boxes2,prev_frame,probs2,false};
+    thread_args args={&net2,NULL,"Demo2",0.1,boxes2,prev_frame,probs2,false};
     pthread_t display_thread;
 
     //define 3 lanes

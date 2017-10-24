@@ -271,6 +271,53 @@ int find_lane(road_lane *lanes, int x, int y)
     return -1;
 }
 
+road_car * find_prev_frame_car(road_car *cur_car, int lanenr, int nr, list_t *prev_frame)
+{
+    if(lanenr> NUMBER_OF_LANES-1)
+        return NULL;
+    if(!prev_frame)
+        return NULL;
+    nr--;
+    if(nr < 0 )
+        return NULL;
+    
+    list_node_t * node = list_at(prev_frame,0);
+    road_lane * lanes = node->val;
+    road_lane * lane = &lanes[lanenr];
+
+    list_node_t * nodecar;// = list_at(lane->cars, nr);
+    road_car *prev_car1=NULL, *prev_car2=NULL, *prev_car = NULL;// = nodecar->val;
+    list_iterator_t *it = list_iterator_new(lane->cars, LIST_HEAD);
+    int cnt = 0;
+    while ((nodecar = list_iterator_next(it))) {
+        prev_car = nodecar->val;
+        //printf("!!!! %d\n", prev_car->position_y);
+
+        if(prev_car1==NULL)
+        {
+            if(prev_car->position_y < cur_car->position_y)
+                prev_car1 = prev_car;
+        } else
+        {
+            if(prev_car->position_y > cur_car->position_y)
+            {
+                prev_car2 = prev_car;
+                break;
+            }
+        }
+        
+        cnt++;
+    }
+    
+    if ((!prev_car1)&&(!prev_car2))
+        return NULL;
+    
+    if (prev_car2)
+        return prev_car1;
+    
+    return prev_car;
+}
+
 #ifdef OPENCV
 void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float thresh, box *boxes, float **probs,*/ char **names, image **alphabet, int classes)
 {
@@ -343,6 +390,14 @@ void draw_detections_cv(thread_args *args,/*IplImage* show_img, int num, float t
                 car->position_x = x_car;
                 car->position_y = y_car;
                 list_rpush(lanes[lane].cars, list_node_new(car));
+                road_car *prev_car = find_prev_frame_car(car,lane, lanes[lane].cars->len, args->prev_frame);
+                if(prev_car)
+                {
+                    float fps=15;
+                    float m_per_pixel = 0.026367187;
+                    float speed = (y_car - prev_car->position_y)* m_per_pixel * fps * 3.6;
+                    printf("prev car: %d %d spped: %f kmh\n", prev_car->position_x, prev_car->position_y, speed);
+                }
             }
 
 			float const font_size = show_img->height / 1000.F;
